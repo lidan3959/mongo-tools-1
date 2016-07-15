@@ -5,7 +5,7 @@ you can use this tool to sync db between mongodbs (compatible with mongo 3.0)
 compile with mongo(2.4)
   1. clone mongo and checkout r2.4.0 tag
   2. cp sync.h and sync.cpp to `src/mongo/tools/`
-  3. cp SConstruct to `src/mongo/` (make our file could be compile)
+  3. cp SConscript to `src/mongo/` (make our file could be compile)
   4. scons tools
 
 ## Other Tips
