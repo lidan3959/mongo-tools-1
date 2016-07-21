@@ -49,11 +49,19 @@ class  OpTimeTool {
 
 class OplogPlayer {
   OpTime _maxOpTimeSynced;
+  bool _onlyOplog;
+  string _toopNs;
   public:
     void applyOps(boost::shared_ptr<DBClientConnection> _t, const BSONObj& op);
     void applyOps2tns(boost::shared_ptr<DBClientConnection> _t, const BSONObj& op, const string& tns);
     void applyOpsTokuMX(boost::shared_ptr<DBClientConnection> _t, const BSONObj& op);  
     const OpTime &maxOpTimeSynced() const { return _maxOpTimeSynced; }
+    void SetOnlyOplog(bool onlyOplog) { _onlyOplog = onlyOplog; }
+    void SetToopNs(string toopNs) { _toopNs = toopNs; }
+    OplogPlayer() {
+      _onlyOplog = false;
+      _toopNs = "sync.oplog";
+    }
 };
 
 class _sync : public Tool {
@@ -76,6 +84,8 @@ class _sync : public Tool {
         ("logappend" , "append to logpath instead of over-writing" )
         ("bufferSize", po::value<int>() , "bufferSize KB when cloning,1~16384" )  
         ("reportingPeriod", po::value<int>(&_reportingPeriod)->default_value(10) , "seconds between progress reports" )
+        ("only-oplog", "Use only-oplog for syncing the oplogs, not including the datas")
+        ("toopns", po::value<string>()->default_value("sync.oplog"), "Use toop-coll for the only-oplog mode's destination ns")
         ;
     }
 
@@ -84,6 +94,7 @@ class _sync : public Tool {
     void SplitString(const string& str, const string& delimiter, vector<string>& vec);
 
     BSONObj getlastOp(boost::shared_ptr<DBClientConnection> _s);
+    OpTime getToopStart(boost::shared_ptr<DBClientConnection> _s, boost::shared_ptr<DBClientConnection> _t, string strNs);
     void setOplogName(boost::shared_ptr<DBClientConnection> _s);  
     string getOplogName(boost::shared_ptr<DBClientConnection> _s);
     BSONElement getTsFromParam(BSONObjBuilder & bb, const string& optimestring);
@@ -95,9 +106,6 @@ class _sync : public Tool {
     bool isTokuMX(boost::shared_ptr<DBClientConnection> _s); 
     bool isSharding(boost::shared_ptr<DBClientConnection> _t);                 
                      
-    void cloneIndex(boost::shared_ptr<DBClientConnection> _s,
-                            boost::shared_ptr<DBClientConnection> _t, string db, string coll);
-
     bool createCollection(boost::shared_ptr<DBClientConnection> _t,
                           string ns, const BSONObj& options);  
     void cloneCollection(boost::shared_ptr<DBClientConnection> _s,
@@ -154,7 +162,10 @@ class _sync : public Tool {
     void goSharding2Sharding(boost::shared_ptr<DBClientConnection> _s, boost::shared_ptr<DBClientConnection> _t);
     virtual int run();
     bool doFork();
-
+    string getMongoVersion(boost::shared_ptr<DBClientConnection> _c);
+    bool getAllCollections(string db, vector<string>& collections, boost::shared_ptr<DBClientConnection> _c, string mongoVersion = "2.4.13");
+    void cloneDbIndex(boost::shared_ptr<DBClientConnection> _s, boost::shared_ptr<DBClientConnection> _t, string db);
+    void cloneCollectionIndex(boost::shared_ptr<DBClientConnection> _s, boost::shared_ptr<DBClientConnection> _t, string collFullname, int *total);
   private:
     bool _usingMongos;
     BSONObj _query;
@@ -169,4 +180,9 @@ class _sync : public Tool {
     int _bufferSize; // real bufferSize
     int _delay;
     int _mode;
+
+    string _srcVersion;
+    string _dstVersion;
+    bool _onlyOplog;
+    string _toopNs;
 };
