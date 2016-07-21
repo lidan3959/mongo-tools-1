@@ -8,9 +8,12 @@ compile with mongo(2.4)
   3. modify the line 632 from 'normalTools = [ "dump", "restore", "export", "import", "stat", "top", "oplog" ]' to 'normalTools = [ "dump", "restore", "export", "import", "stat", "top", "oplog", "sync" ]'
   4. comment the `-Werror` flags in the `mongo/SConstruct` and `mongo/src/third_party/v8/SConscript`, as follows
     
+    ```cpp
     mongo/SConstruct
     713 #        env.Append( CCFLAGS=["-Werror", "-pipe"] )
     
     mongo/src/third_party/v8/SConscript
     50  #                       '-Werror',
+    ```
+    
   5. scons tools
